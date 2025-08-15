@@ -7,6 +7,9 @@ metadata:
     instance: ${POD_NAME}
 spec:
   restartPolicy: Always
+
+  
+
   containers:
     
     - name: mosquitto
@@ -18,12 +21,13 @@ spec:
       volumeMounts:
         - name: mosquitto-conf
           mountPath: /mosquitto/config
-          readOnly: true
+          ## readOnly: true.  for acl file, it require to write
 
     - name: go-client
       image: docker.io/alpine:latest
       workingDir: /app
       command: ["./read"]
+      args: ["${POD_NAME}"]
       volumeMounts:
         - name: go-binary
           mountPath: /app/read

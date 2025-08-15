@@ -5,7 +5,7 @@ HOST_PORT=${2:-"1883"}
 
 echo "Lanciando pod: digitaltwin-${POD_NAME} su porta ${HOST_PORT}"
 
-# Sostituisci variabili e lancia
+# Sostituisci variabili e lancia]
 sed -e "s/\${POD_NAME}/${POD_NAME}/g" \
     -e "s/\${HOST_PORT}/${HOST_PORT}/g" \
     pod-template.yaml | podman play kube -

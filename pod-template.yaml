@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: digitaltwin-${POD_NAME}
+  labels:
+    app: DigitalTwin
+    instance: ${POD_NAME}
+spec:
+  restartPolicy: Always
+  containers:
+    
+    - name: mosquitto
+      image: docker.io/eclipse-mosquitto:latest
+      ports:
+        - containerPort: 1883
+          hostPort: ${HOST_PORT}
+          protocol: TCP
+      volumeMounts:
+        - name: mosquitto-conf
+          mountPath: /mosquitto/config
+          readOnly: true
+
+    - name: go-client
+      image: docker.io/alpine:latest
+      workingDir: /app
+      command: ["./read"]
+      volumeMounts:
+        - name: go-binary
+          mountPath: /app/read
+          subPath: read
+          readOnly: true
+
+  volumes:
+    - name: mosquitto-conf
+      hostPath:
+        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/mosquitto
+        type: Directory
+    
+    - name: go-binary
+      hostPath:
+        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/go
+        type: Directory

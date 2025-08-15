@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	broker := "tcp://192.168.1.103:1883" // cambia con IP broker MQTT
+	broker := "tcp://localhost:1883" // cambia con IP broker MQTT
 	topic := "Palletizzatore/MainMachine/Conteggio"
 	clientID := "go-mqtt-subscriber"
 

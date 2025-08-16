@@ -8,8 +8,6 @@ metadata:
 spec:
   restartPolicy: Always
 
-  
-
   containers:
     
     - name: mosquitto
@@ -20,19 +18,82 @@ spec:
           protocol: TCP
       volumeMounts:
         - name: mosquitto-conf
-          mountPath: /mosquitto/config
+          mountPath: /mosquitto/config 
           ## readOnly: true.  for acl file, it require to write
+
+
+    - name: timescaledb
+      image: docker.io/timescale/timescaledb:latest-pg15
+      ports:
+        - containerPort: 5432
+          protocol: TCP
+      command: 
+          - /bin/bash
+          - -c
+          - |
+            echo "🚀 Avvio TimescaleDB con setup automatico..."
+            
+            # Imposta sempre le variabili d'ambiente per PostgreSQL
+            export POSTGRES_HOST_AUTH_METHOD=trust
+            export POSTGRES_DB=mqtt_data
+            export POSTGRES_USER=mqtt_user
+            export POSTGRES_PASSWORD=mqtt_password
+            export POSTGRES_INITDB_ARGS="--auth-host=trust --auth-local=trust"
+            
+            # Se il database non esiste, sarà inizializzato automaticamente
+            if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+              echo "📊 Database non esistente, inizializzazione automatica..."
+            else
+              echo "📂 Database esistente trovato, avvio normale"
+            fi
+            
+            echo "🔧 Avvio PostgreSQL/TimescaleDB con variabili impostate..."
+            
+            # Avvia il processo normale di PostgreSQL
+            exec docker-entrypoint.sh postgres
+        
+      environment:
+       # - name: POSTGRES_HOST_AUTH_METHOD
+       #   value: "trust"
+       # - name: POSTGRES_DB
+       #   value: "mqtt_data"
+       # - name: POSTGRES_USER
+       #   value: "mqtt_user"
+       # - name: POSTGRES_PASSWORD
+       #   value: "mqtt_password"
+      volumeMounts:
+        - name: timescale-data
+          mountPath: /var/lib/postgresql/data # db will write here
+        - name: timescale-init
+          mountPath: /docker-entrypoint-initdb.d # postgres convenction, it will look for sql files here
+          readOnly: true
 
     - name: go-client
       image: docker.io/alpine:latest
       workingDir: /app
-      command: ["./read"]
+      command: ["./mqtt_to_timescale"]
       args: ["${POD_NAME}"]
+      environment:
+        - name: MQTT_BROKER
+          value: "tcp://localhost:1883"
+        - name: DB_HOST
+          value: "localhost"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "mqtt_data"
+        - name: DB_USER
+          value: "mqtt_user"
+        - name: DB_PASSWORD
+          value: "mqtt_password"
       volumeMounts:
         - name: go-binary
-          mountPath: /app/read
-          subPath: read
+          mountPath: /app/mqtt_to_timescale   # ← Percorso del file nel container
+          subPath: mqtt_to_timescale         # ← Nome del file dalla directory go/
           readOnly: true
+
+
+
 
   volumes:
     - name: mosquitto-conf
@@ -44,3 +105,16 @@ spec:
       hostPath:
         path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/go
         type: Directory
+
+    - name: timescale-data
+      # emptyDir: {}   # removed with the pod, temporary volume
+      hostPath:
+       path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/timescale/data/${POD_NAME}
+       type: DirectoryOrCreate
+
+    - name: timescale-init
+      hostPath:
+        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/timescale/init
+        type: Directory
+
+    

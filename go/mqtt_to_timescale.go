@@ -8,12 +8,20 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/lib/pq" // È come dire: "Carica il plugin PostgreSQL" , il compilatore con _ non si lamenta
 )
+
+type MQTTMessage struct {
+	Topic   string
+	Payload string
+	PodName string
+}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
@@ -64,18 +72,35 @@ func connectDB(connStr string, maxRetries int) *sql.DB {
 func insertMQTTData(db *sql.DB, topic, payload, podName string) error {
 	query := `INSERT INTO mqtt_data (time, topic, value, pod_name) VALUES (NOW(), $1, $2, $3)`
 
+	cleanPayload := strings.ReplaceAll(payload, "\r\n", "")
+	cleanPayload = strings.ReplaceAll(cleanPayload, "\r", "")
+	cleanPayload = strings.ReplaceAll(cleanPayload, "\n", "")
+	cleanPayload = strings.TrimSpace(cleanPayload)
+
 	// Verifica se è JSON valido
 	var jsonValue json.RawMessage
-	if json.Valid([]byte(payload)) {
-		jsonValue = json.RawMessage(payload)
+	if json.Valid([]byte(cleanPayload)) {
+		jsonValue = json.RawMessage(cleanPayload)
 	} else {
 		// Se non è JSON, wrappa come stringa
-		jsonStr, _ := json.Marshal(payload)
+		jsonStr, _ := json.Marshal(cleanPayload)
 		jsonValue = json.RawMessage(jsonStr)
 	}
 
 	_, err := db.Exec(query, topic, jsonValue, podName)
 	return err
+}
+
+func dbWorker(db *sql.DB, msgChan <-chan MQTTMessage, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for msg := range msgChan {
+		if err := insertMQTTData(db, msg.Topic, msg.Payload, msg.PodName); err != nil {
+			log.Printf("❌ Errore DB per topic %s: %v", msg.Topic, err)
+		} else {
+			log.Printf("✅ Salvato: %s", msg.Topic)
+		}
+	}
 }
 
 func main() {
@@ -111,16 +136,37 @@ func main() {
 	opts.AddBroker(mqttBroker)
 	opts.SetClientID(clientID)
 
+	msgChan := make(chan MQTTMessage, 1000)
+
+	// WaitGroup per sincronizzare i worker
+	var wg sync.WaitGroup
+
+	// Avvia 5 worker goroutine per il database
+	numWorkers := 5
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go dbWorker(db, msgChan, &wg)
+	}
+
 	// Handler dei messaggi ricevuti
+	// Handler MQTT NON bloccante
 	var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 		payload := string(msg.Payload())
 
-		// Stampa per debug
+		// Debug
 		fmt.Printf("[%s] %s = %s\n", time.Now().Format("15:04:05"), msg.Topic(), payload)
 
-		// Salva in TimescaleDB
-		if err := insertMQTTData(db, msg.Topic(), payload, rootTopic); err != nil {
-			log.Printf("Errore inserimento DB per topic %s: %v", msg.Topic(), err)
+		// Invia al channel (non bloccante se c'è spazio nel buffer)
+		select {
+		case msgChan <- MQTTMessage{
+			Topic:   msg.Topic(),
+			Payload: payload,
+			PodName: rootTopic,
+		}:
+			// Messaggio inviato con successo
+		default:
+			// Buffer pieno - messaggio perso (oppure usa strategia diversa)
+			log.Printf("⚠️  Buffer pieno, messaggio perso: %s", msg.Topic())
 		}
 	}
 

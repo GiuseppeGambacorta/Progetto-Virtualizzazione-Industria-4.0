@@ -12,6 +12,11 @@ datasources:
       sslmode: disable
       postgresVersion: 1500
       timescaledb: true
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
     isDefault: true
     access: proxy
     editable: true
+    version: 1

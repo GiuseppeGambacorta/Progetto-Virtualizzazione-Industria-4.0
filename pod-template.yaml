@@ -26,6 +26,7 @@ spec:
       image: docker.io/timescale/timescaledb:latest-pg15
       ports:
         - containerPort: 5432
+          #hostPort: 5432 for debug
           protocol: TCP
       command: 
           - /bin/bash
@@ -106,6 +107,8 @@ spec:
           value: "false"
         - name: GF_INSTALL_PLUGINS
           value: "grafana-clock-panel,grafana-simple-json-datasource"
+        - name: POD_NAME
+          value: "${POD_NAME}" 
       volumeMounts:
         - name: grafana-data
           mountPath: /var/lib/grafana  # ← Storage configurazioni Grafana

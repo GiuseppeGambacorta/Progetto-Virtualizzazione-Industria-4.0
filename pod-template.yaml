@@ -93,6 +93,31 @@ spec:
           readOnly: true
 
 
+    - name: grafana
+      image: docker.io/grafana/grafana:latest
+      ports:
+        - containerPort: 3000
+          hostPort: ${GRAFANA_PORT} 
+          protocol: TCP
+      environment:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin123"  
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-clock-panel,grafana-simple-json-datasource"
+      volumeMounts:
+        - name: grafana-data
+          mountPath: /var/lib/grafana  # ← Storage configurazioni Grafana
+        - name: grafana-config
+          mountPath: /etc/grafana/provisioning  # ← Configurazioni automatiche
+          readOnly: true
+        - name: grafana-ini
+          mountPath: /etc/grafana/grafana.ini  # ← File configurazione principale
+          subPath: grafana.ini
+          readOnly: true
+
+
 
 
   volumes:
@@ -115,6 +140,21 @@ spec:
     - name: timescale-init
       hostPath:
         path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/timescale/init
+        type: Directory
+
+    - name: grafana-data
+      hostPath:
+        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/grafana/data/${POD_NAME}
+        type: DirectoryOrCreate
+
+    - name: grafana-config
+      hostPath:
+        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/grafana/provisioning
+        type: Directory
+
+    - name: grafana-ini
+      hostPath:
+        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/grafana
         type: Directory
 
     

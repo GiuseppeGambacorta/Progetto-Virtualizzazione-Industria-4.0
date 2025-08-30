@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: digitaltwin-${POD_NAME}
+  name: digitaltwin-${POD_NAME} # nome univoco per engine
   labels:
     app: DigitalTwin
-    instance: ${POD_NAME}
+    instance: ${POD_NAME} # informazioni aggiuntive
 spec:
   restartPolicy: Always
 
@@ -19,54 +19,49 @@ spec:
       volumeMounts:
         - name: mosquitto-conf
           mountPath: /mosquitto/config 
-          ## readOnly: true.  for acl file, it require to write
-
 
     - name: timescaledb
       image: docker.io/timescale/timescaledb:latest-pg15
       ports:
-        - containerPort: 5432
-          #hostPort: 5432 for debug
-          protocol: TCP
-      command: 
+        - protocol: TCP
+      command:
           - /bin/bash
           - -c
           - |
-            echo "🚀 Avvio TimescaleDB con setup automatico..."
+            echo "Avvio TimescaleDB con setup automatico..."
             
-            # Imposta sempre le variabili d'ambiente per PostgreSQL
             export POSTGRES_HOST_AUTH_METHOD=trust
             export POSTGRES_DB=mqtt_data
             export POSTGRES_USER=mqtt_user
             export POSTGRES_PASSWORD=mqtt_password
             export POSTGRES_INITDB_ARGS="--auth-host=trust --auth-local=trust"
             
-            # Se il database non esiste, sarà inizializzato automaticamente
             if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
-              echo "📊 Database non esistente, inizializzazione automatica..."
+              echo "Database non esistente, inizializzazione automatica..."
             else
-              echo "📂 Database esistente trovato, avvio normale"
+              echo "Database esistente trovato, avvio normale"
             fi
             
-            echo "🔧 Avvio PostgreSQL/TimescaleDB con variabili impostate..."
-            
-            # Avvia il processo normale di PostgreSQL
+            echo "Avvio PostgreSQL/TimescaleDB con variabili impostate..."
             exec docker-entrypoint.sh postgres
         
-      environment:
-       # - name: POSTGRES_HOST_AUTH_METHOD
-       #   value: "trust"
-       # - name: POSTGRES_DB
-       #   value: "mqtt_data"
-       # - name: POSTGRES_USER
-       #   value: "mqtt_user"
-       # - name: POSTGRES_PASSWORD
-       #   value: "mqtt_password"
       volumeMounts:
         - name: timescale-data
-          mountPath: /var/lib/postgresql/data # db will write here
+          mountPath: /var/lib/postgresql/data
         - name: timescale-init
-          mountPath: /docker-entrypoint-initdb.d # postgres convenction, it will look for sql files here
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+
+    - name: go-publisher
+      image: docker.io/alpine:latest
+      workingDir: /app
+      command: ["./mqtt_simulation"]
+      args: ["${POD_NAME}", "1883"]
+      environment:
+      volumeMounts:
+        - name: go-publisher-binary
+          mountPath: /app/mqtt_simulation
+          subPath: mqtt_simulation
           readOnly: true
 
     - name: go-client
@@ -88,11 +83,10 @@ spec:
         - name: DB_PASSWORD
           value: "mqtt_password"
       volumeMounts:
-        - name: go-binary
-          mountPath: /app/mqtt_to_timescale   # ← Percorso del file nel container
-          subPath: mqtt_to_timescale         # ← Nome del file dalla directory go/
+        - name: go-client-binary
+          mountPath: /app/mqtt_to_timescale
+          subPath: mqtt_to_timescale
           readOnly: true
-
 
     - name: grafana
       image: docker.io/grafana/grafana:latest
@@ -102,7 +96,7 @@ spec:
           protocol: TCP
       environment:
         - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin123"  
+          value: "admin"  
         - name: GF_USERS_ALLOW_SIGN_UP
           value: "false"
         - name: GF_INSTALL_PLUGINS
@@ -111,53 +105,54 @@ spec:
           value: "${POD_NAME}" 
       volumeMounts:
         - name: grafana-data
-          mountPath: /var/lib/grafana  # ← Storage configurazioni Grafana
+          mountPath: /var/lib/grafana
         - name: grafana-config
-          mountPath: /etc/grafana/provisioning  # ← Configurazioni automatiche
+          mountPath: /etc/grafana/provisioning
           readOnly: true
         - name: grafana-ini
-          mountPath: /etc/grafana/grafana.ini  # ← File configurazione principale
+          mountPath: /etc/grafana/grafana.ini
           subPath: grafana.ini
           readOnly: true
 
-
-
-
   volumes:
+    # 🔄 Path relativi usando PWD
     - name: mosquitto-conf
       hostPath:
-        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/mosquitto
+        path: ${PWD}/mosquitto
+        type: Directory
+
+        
+    - name: go-publisher-binary
+      hostPath:
+        path: ${PWD}/go_simulation
         type: Directory
     
-    - name: go-binary
+    - name: go-client-binary
       hostPath:
-        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/go
+        path: ${PWD}/go_to_timescale
         type: Directory
 
     - name: timescale-data
-      # emptyDir: {}   # removed with the pod, temporary volume
       hostPath:
-       path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/timescale/data/${POD_NAME}
-       type: DirectoryOrCreate
+       path: ${PWD}/timescale/data/${POD_NAME}
+       type: DirectoryOrCreate  
 
     - name: timescale-init
       hostPath:
-        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/timescale/init
+        path: ${PWD}/timescale/init
         type: Directory
 
     - name: grafana-data
       hostPath:
-        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/grafana/data/${POD_NAME}
+        path: ${PWD}/grafana/data/${POD_NAME}
         type: DirectoryOrCreate
 
     - name: grafana-config
       hostPath:
-        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/grafana/provisioning
+        path: ${PWD}/grafana/provisioning
         type: Directory
 
     - name: grafana-ini
       hostPath:
-        path: /Users/giuseppe/Documents/Software/ProvaLetturaMQTT/grafana
+        path: ${PWD}/grafana
         type: Directory
-
-    

@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: digitaltwin-palletizer1  # nome univoco per engine
+  labels:
+    app: DigitalTwin
+    instance: palletizer1  # informazioni aggiuntive
+
+spec:
+  restartPolicy: Always
+
+  containers:
+    
+    - name: mosquitto
+      image: docker.io/eclipse-mosquitto:latest
+      ports:
+        - containerPort: 1883
+          hostPort: 1883
+          protocol: TCP
+      volumeMounts:
+        - name: mosquitto-conf
+          mountPath: /mosquitto/config 
+
+    - name: timescaledb
+      image: docker.io/timescale/timescaledb:latest-pg15
+      ports:
+        - protocol: TCP
+      command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Avvio TimescaleDB con setup automatico..."
+            
+            export POSTGRES_HOST_AUTH_METHOD=trust
+            export POSTGRES_DB=mqtt_data
+            export POSTGRES_USER=mqtt_user
+            export POSTGRES_PASSWORD=mqtt_password
+            export POSTGRES_INITDB_ARGS="--auth-host=trust --auth-local=trust"
+            
+            if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+              echo "Database non esistente, inizializzazione automatica..."
+            else
+              echo "Database esistente trovato, avvio normale"
+            fi
+            
+            echo "Avvio PostgreSQL/TimescaleDB con variabili impostate..."
+            exec docker-entrypoint.sh postgres
+        
+      volumeMounts:
+        - name: timescale-data
+          mountPath: /var/lib/postgresql/data
+        - name: timescale-init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+
+    - name: go-client
+      image: docker.io/alpine:latest
+      workingDir: /app
+      command: ["./mqtt_to_timescale"]
+      args: ["palletizer1"]
+      environment:
+        - name: MQTT_BROKER
+          value: "tcp://localhost:1883"
+        - name: DB_HOST
+          value: "localhost"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "mqtt_data"
+        - name: DB_USER
+          value: "mqtt_user"
+        - name: DB_PASSWORD
+          value: "mqtt_password"
+      volumeMounts:
+        - name: go-binary
+          mountPath: /app/mqtt_to_timescale
+          subPath: mqtt_to_timescale
+          readOnly: true
+
+    - name: grafana
+      image: docker.io/grafana/grafana:latest
+      ports:
+        - containerPort: 3000
+          hostPort: 4000
+          protocol: TCP
+      environment:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin"  
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-clock-panel,grafana-simple-json-datasource"
+        - name: POD_NAME
+          value: "palletizer1
+      " 
+      volumeMounts:
+        - name: grafana-data
+          mountPath: /var/lib/grafana
+        - name: grafana-config
+          mountPath: /etc/grafana/provisioning
+          readOnly: true
+        - name: grafana-ini
+          mountPath: /etc/grafana/grafana.ini
+          subPath: grafana.ini
+          readOnly: true
+
+  volumes:
+    # 🔄 Path relativi usando PWD
+    - name: mosquitto-conf
+      hostPath:
+        path: ${PWD}/mosquitto
+        type: Directory
+    
+    - name: go-binary
+      hostPath:
+        path: ${PWD}/go_to_timescale
+        type: Directory
+
+    - name: timescale-data
+      hostPath:
+       path: ${PWD}/timescale/data/palletizer1
+    
+       type: DirectoryOrCreate  
+
+    - name: timescale-init
+      hostPath:
+        path: ${PWD}/timescale/init
+        type: Directory
+
+    - name: grafana-data
+      hostPath:
+        path: ${PWD}/grafana/data/palletizer1
+    
+        type: DirectoryOrCreate
+
+    - name: grafana-config
+      hostPath:
+        path: ${PWD}/grafana/provisioning
+        type: Directory
+
+    - name: grafana-ini
+      hostPath:
+        path: ${PWD}/grafana
+        type: Directory

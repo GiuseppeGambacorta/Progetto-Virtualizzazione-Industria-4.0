@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: digitaltwin-palletizer1  # nome univoco per engine
+  name: digitaltwin-palletizer1    
   labels:
     app: DigitalTwin
-    instance: palletizer1  # informazioni aggiuntive
+    instance: palletizer1  
 
 spec:
   restartPolicy: Always
@@ -20,6 +20,42 @@ spec:
       volumeMounts:
         - name: mosquitto-conf
           mountPath: /mosquitto/config 
+
+    - name: go-publisher
+      image: docker.io/alpine:latest
+      workingDir: /app
+      command: ["./mqtt_simulation"]
+      args: ["${POD_NAME}", "1883"]
+      environment:
+      volumeMounts:
+        - name: go-publisher-binary
+          mountPath: /app/mqtt_simulation
+          subPath: mqtt_simulation
+          readOnly: true
+
+    - name: go-client
+      image: docker.io/alpine:latest
+      workingDir: /app
+      command: ["./mqtt_to_timescale"]
+      args: ["palletizer1"]
+      environment:
+        - name: MQTT_BROKER
+          value: "tcp://localhost:1883"
+        - name: DB_HOST
+          value: "localhost"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "mqtt_data"
+        - name: DB_USER
+          value: "mqtt_user"
+        - name: DB_PASSWORD
+          value: "mqtt_password"
+      volumeMounts:
+        - name: go-client-binary
+          mountPath: /app/mqtt_to_timescale
+          subPath: mqtt_to_timescale
+          readOnly: true
 
     - name: timescaledb
       image: docker.io/timescale/timescaledb:latest-pg15
@@ -51,30 +87,6 @@ spec:
           mountPath: /var/lib/postgresql/data
         - name: timescale-init
           mountPath: /docker-entrypoint-initdb.d
-          readOnly: true
-
-    - name: go-client
-      image: docker.io/alpine:latest
-      workingDir: /app
-      command: ["./mqtt_to_timescale"]
-      args: ["palletizer1"]
-      environment:
-        - name: MQTT_BROKER
-          value: "tcp://localhost:1883"
-        - name: DB_HOST
-          value: "localhost"
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          value: "mqtt_data"
-        - name: DB_USER
-          value: "mqtt_user"
-        - name: DB_PASSWORD
-          value: "mqtt_password"
-      volumeMounts:
-        - name: go-binary
-          mountPath: /app/mqtt_to_timescale
-          subPath: mqtt_to_timescale
           readOnly: true
 
     - name: grafana
@@ -110,8 +122,13 @@ spec:
       hostPath:
         path: ${PWD}/mosquitto
         type: Directory
+  
+    - name: go-publisher-binary
+      hostPath:
+        path: ${PWD}/go_simulation
+        type: Directory
     
-    - name: go-binary
+    - name: go-client-binary
       hostPath:
         path: ${PWD}/go_to_timescale
         type: Directory

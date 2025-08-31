@@ -1,10 +1,19 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: digitaltwin-${POD_NAME} # nome univoco per engine
+metadata:
+  # 'name' è l'identificatore tecnico e univoco del pod all'interno del cluster/container engine.
+  # Deve essere unico per ogni pod e viene usato dai comandi di gestione (es: podman, kubectl).
+  name: digitaltwin-${POD_NAME}
+
   labels:
+    # 'app' è una label generica che permette di raggruppare tutte le risorse che fanno parte della stessa applicazione.
     app: DigitalTwin
-    instance: ${POD_NAME} # informazioni aggiuntive
+
+    # 'instance' è una label logica che identifica l'istanza funzionale o il ruolo del pod.
+    # Può essere usata per filtrare, monitorare o gestire gruppi di pod che rappresentano, ad esempio, diversi palletizer.
+    # A differenza di 'name', può essere duplicata su più pod se necessario.
+    instance: ${POD_NAME}
 spec:
   restartPolicy: Always
 
@@ -14,7 +23,7 @@ spec:
       image: docker.io/eclipse-mosquitto:latest
       ports:
         - containerPort: 1883
-          hostPort: ${HOST_PORT}
+          hostPort: ${HOST_PORT}.   # Qui imposto una porta per essere raggiungibile dall'esterno
           protocol: TCP
       volumeMounts:
         - name: mosquitto-conf
@@ -24,13 +33,13 @@ spec:
       image: docker.io/timescale/timescaledb:latest-pg15
       ports:
         - protocol: TCP
-      command:
+      command:                     # Imposto qui le variabili di ambiente per via di un problema noto con le immagini postgres (sul quale timescaleDB è basato)
           - /bin/bash
           - -c
           - |
             echo "Avvio TimescaleDB con setup automatico..."
             
-            export POSTGRES_HOST_AUTH_METHOD=trust
+            export POSTGRES_HOST_AUTH_METHOD=trust        
             export POSTGRES_DB=mqtt_data
             export POSTGRES_USER=mqtt_user
             export POSTGRES_PASSWORD=mqtt_password
@@ -56,12 +65,12 @@ spec:
       image: docker.io/alpine:latest
       workingDir: /app
       command: ["./mqtt_simulation"]
-      args: ["${POD_NAME}", "1883"]
+      args: ["${POD_NAME}", "1883"]  # Argomenti Multipli
       environment:
       volumeMounts:
         - name: go-publisher-binary
-          mountPath: /app/mqtt_simulation
-          subPath: mqtt_simulation
+          mountPath: /app/mqtt_simulation.   # punto di montaggio all'interno del container
+          subPath: mqtt_simulation.          # dalla cartella del publisher monta solo il file
           readOnly: true
 
     - name: go-client
@@ -84,8 +93,8 @@ spec:
           value: "mqtt_password"
       volumeMounts:
         - name: go-client-binary
-          mountPath: /app/mqtt_to_timescale
-          subPath: mqtt_to_timescale
+          mountPath: /app/mqtt_to_timescale    # punto di montaggio all'interno del container
+          subPath: mqtt_to_timescale           # dalla cartella del client monta solo il file
           readOnly: true
 
     - name: grafana
@@ -110,48 +119,54 @@ spec:
           mountPath: /etc/grafana/provisioning
           readOnly: true
         - name: grafana-ini
-          mountPath: /etc/grafana/grafana.ini
-          subPath: grafana.ini
+          mountPath: /etc/grafana/grafana.ini   # punto di montaggio all'interno del container
+          subPath: grafana.ini                  # da grafana-ini monta solo il file grafana.ini
           readOnly: true
 
-  volumes:
-    # 🔄 Path relativi usando PWD
+  volumes:                   # I volumi vengono dichiarati separatamente, da notare che non viene dichiarata nessuna rete
+    # Configurazione Mosquitto
     - name: mosquitto-conf
       hostPath:
         path: ${PWD}/mosquitto
         type: Directory
 
-        
+    # Binario simulatore MQTT
     - name: go-publisher-binary
       hostPath:
         path: ${PWD}/go_simulation
         type: Directory
-    
+
+    # Binario client Go
     - name: go-client-binary
       hostPath:
         path: ${PWD}/go_to_timescale
         type: Directory
 
+    # Dati persistenti TimescaleDB (creati automaticamente se non esistono)
     - name: timescale-data
       hostPath:
-       path: ${PWD}/timescale/data/${POD_NAME}
-       type: DirectoryOrCreate  
+        path: ${PWD}/timescale/data/${POD_NAME}
+        type: DirectoryOrCreate
 
+    # Script di inizializzazione TimescaleDB
     - name: timescale-init
       hostPath:
         path: ${PWD}/timescale/init
         type: Directory
 
+    # Dati persistenti Grafana (creati automaticamente se non esistono)
     - name: grafana-data
       hostPath:
         path: ${PWD}/grafana/data/${POD_NAME}
         type: DirectoryOrCreate
 
+    # Provisioning dashboard/datasource Grafana
     - name: grafana-config
       hostPath:
         path: ${PWD}/grafana/provisioning
         type: Directory
 
+    # Configurazione principale Grafana (solo il file grafana.ini)
     - name: grafana-ini
       hostPath:
         path: ${PWD}/grafana

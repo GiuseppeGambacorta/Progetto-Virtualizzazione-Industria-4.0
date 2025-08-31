@@ -111,18 +111,18 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    time,\n    (value->>'Position')::numeric as Position\nFROM mqtt_data \nWHERE topic = 'palletizer2/ProductInfeedConveyors/Objects/FirstConveyor' \n  AND time >= $__timeFrom() \n  AND time <= $__timeTo()\nORDER BY time ASC;",
+          "rawSql": "SELECT \n    time,\n    (value->>'Position')::numeric as Position\nFROM mqtt_data \nWHERE topic = 'palletizer1/ProductInfeedConveyors/Objects/FirstConveyor' \n  AND time >= $__timeFrom() \n  AND time <= $__timeTo()\nORDER BY time ASC;",
           "refId": "A"
         }
       ],
-      "title": "palletizer2 - FirstConveyor Position",
+      "title": "palletizer1 - FirstConveyor Position",
       "type": "timeseries"
     }
   ],
   "preload": false,
   "refresh": "auto",
   "schemaVersion": 41,
-  "tags": ["palletizer2", "conveyor"],
+  "tags": ["palletizer1", "conveyor"],
   "templating": {
     "list": []
   },
@@ -132,7 +132,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "palletizer2 Motor Dashboard",
-  "uid": "palletizer2-motor-dashboard",
+  "title": "palletizer1 Motor Dashboard",
+  "uid": "palletizer1-motor-dashboard",
   "version": 1
 }

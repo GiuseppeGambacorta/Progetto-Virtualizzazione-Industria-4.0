@@ -153,7 +153,6 @@ func main() {
 	var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 		payload := string(msg.Payload())
 
-		// Debug
 		fmt.Printf("[%s] %s = %s\n", time.Now().Format("15:04:05"), msg.Topic(), payload)
 
 		// Invia al channel (non bloccante se c'è spazio nel buffer)

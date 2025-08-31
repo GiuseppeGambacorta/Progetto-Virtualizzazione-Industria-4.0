@@ -1,4 +1,3 @@
-# Digital Twin - Prova Lettura MQTT
 
 ## Requisiti
 
@@ -22,15 +21,17 @@ $env:GOOS="linux"; $env:GOARCH="arm64"; $env:CGO_ENABLED="0"; go build -o go_sim
 $env:GOOS="linux"; $env:GOARCH="arm64"; $env:CGO_ENABLED="0"; go build -o go_to_timescale/mqtt_to_timescale go_to_timescale/mqtt_to_timescale.go
 ```
 
-## 2. Avvio della VM Podman
+## 2. Installazione e Avvio della VM Podman
 
 **macOS:**
 ```bash
+podman machine init # Solo la prima volta
 podman machine start
 ```
 
 **Windows:**
 ```powershell
+podman machine init # Solo la prima volta
 podman machine start
 ```
 
@@ -90,6 +91,7 @@ Apri il browser su:
 
 ```
 http://localhost:4000
+http://localhost:4000/dashboards #per trovare dashboards 
 ```
 
 Credenziali di default:

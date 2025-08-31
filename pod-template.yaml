@@ -166,7 +166,7 @@ spec:
         path: ${PWD}/grafana/provisioning
         type: Directory
 
-    # Configurazione principale Grafana (solo il file grafana.ini)
+    # Configurazione principale Grafana, al container passo solo grafana.ini
     - name: grafana-ini
       hostPath:
         path: ${PWD}/grafana

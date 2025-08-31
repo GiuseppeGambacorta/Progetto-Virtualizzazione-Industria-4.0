@@ -14,7 +14,7 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	_ "github.com/lib/pq" // È come dire: "Carica il plugin PostgreSQL" , il compilatore con _ non si lamenta
+	_ "github.com/lib/pq" // È come dire: "Carica il plugin PostgreSQL" , il compilatore con _ non si lamenta del import non utilizzato
 )
 
 type MQTTMessage struct {
@@ -32,7 +32,7 @@ func getEnv(key, defaultValue string) string {
 
 func waitForService(host, port, serviceName string, maxRetries int) {
 	for i := 0; i < maxRetries; i++ {
-		log.Printf("🔄 Tentativo connessione %s %d/%d...", serviceName, i+1, maxRetries)
+		log.Printf(" Tentativo connessione %s %d/%d...", serviceName, i+1, maxRetries)
 
 		conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 2*time.Second)
 		if err == nil {
@@ -41,7 +41,7 @@ func waitForService(host, port, serviceName string, maxRetries int) {
 			return
 		}
 
-		log.Printf("⏳ %s non pronto, aspetto 3 secondi...", serviceName)
+		log.Printf(" %s non pronto, aspetto 3 secondi...", serviceName)
 		time.Sleep(3 * time.Second)
 	}
 
@@ -61,11 +61,11 @@ func connectDB(connStr string, maxRetries int) *sql.DB {
 			}
 		}
 
-		log.Printf("⏳ Database non pronto, aspetto 3 secondi...")
+		log.Printf("Database non pronto, aspetto 3 secondi...")
 		time.Sleep(3 * time.Second)
 	}
 
-	log.Fatalf("❌ Impossibile connettersi al database dopo %d tentativi", maxRetries)
+	log.Fatalf(" Impossibile connettersi al database dopo %d tentativi", maxRetries)
 	return nil
 }
 
@@ -96,9 +96,9 @@ func dbWorker(db *sql.DB, msgChan <-chan MQTTMessage, wg *sync.WaitGroup) {
 
 	for msg := range msgChan {
 		if err := insertMQTTData(db, msg.Topic, msg.Payload, msg.PodName); err != nil {
-			log.Printf("❌ Errore DB per topic %s: %v", msg.Topic, err)
+			log.Printf(" Errore DB per topic %s: %v", msg.Topic, err)
 		} else {
-			log.Printf("✅ Salvato: %s", msg.Topic)
+			log.Printf("Salvato: %s", msg.Topic)
 		}
 	}
 }
@@ -165,7 +165,7 @@ func main() {
 			// Messaggio inviato con successo
 		default:
 			// Buffer pieno - messaggio perso (oppure usa strategia diversa)
-			log.Printf("⚠️  Buffer pieno, messaggio perso: %s", msg.Topic())
+			log.Printf("Buffer pieno, messaggio perso: %s", msg.Topic())
 		}
 	}
 
@@ -185,8 +185,8 @@ func main() {
 		log.Fatalf("Errore sottoscrizione topic: %v", token.Error())
 	}
 
-	fmt.Printf("🔍 Auto-discovery attivo su: %s\n", wildcardTopic)
-	fmt.Println("🎧 In attesa di messaggi... (Ctrl+C per uscire)")
+	fmt.Printf("Auto-discovery attivo su: %s\n", wildcardTopic)
+	fmt.Println("In attesa di messaggi... (Ctrl+C per uscire)")
 
 	// Attendi segnale per chiudere (Ctrl+C)
 	sigChan := make(chan os.Signal, 1)

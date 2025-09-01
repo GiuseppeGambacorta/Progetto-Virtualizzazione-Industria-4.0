@@ -15,7 +15,7 @@ GRAFANA_PORT=${3:-"5000"}
 
 
 echo " Generando dashboard per: ${POD_NAME}"
-# Genera dashboard con POD_NAME sostituito
+
 sed "s/\${POD_NAME}/${POD_NAME}/g" \
     grafana/provisioning/dashboards/mqtt-dashboard-template.json > \
     grafana/provisioning/dashboards/mqtt-dashboard.json

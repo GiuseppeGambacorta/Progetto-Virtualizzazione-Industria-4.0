@@ -142,11 +142,11 @@ spec:
         path: ${PWD}/go_to_timescale
         type: Directory
 
-    # Dati persistenti TimescaleDB (creati automaticamente se non esistono)
+    # Dati persistenti TimescaleDB
     - name: timescale-data
       hostPath:
         path: ${PWD}/timescale/data/${POD_NAME}
-        type: DirectoryOrCreate
+        type: DirectoryOrCreate  # Crea automaticamente la cartella se non esiste
 
     # Script di inizializzazione TimescaleDB
     - name: timescale-init
@@ -154,11 +154,11 @@ spec:
         path: ${PWD}/timescale/init
         type: Directory
 
-    # Dati persistenti Grafana (creati automaticamente se non esistono)
+    # Dati persistenti Grafana    
     - name: grafana-data
       hostPath:
         path: ${PWD}/grafana/data/${POD_NAME}
-        type: DirectoryOrCreate
+        type: DirectoryOrCreate  # Crea automaticamente la cartella se non esiste
 
     # Provisioning dashboard/datasource Grafana
     - name: grafana-config

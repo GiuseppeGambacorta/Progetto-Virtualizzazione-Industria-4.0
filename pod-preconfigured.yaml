@@ -60,6 +60,7 @@ spec:
     - name: timescaledb
       image: docker.io/timescale/timescaledb:latest-pg15
       ports:
+        - containerPort: 5432
         - protocol: TCP
       command:
           - /bin/bash

@@ -164,7 +164,7 @@ func main() {
 		}:
 			// Messaggio inviato con successo
 		default:
-			// Buffer pieno - messaggio perso (oppure usa strategia diversa)
+			// Buffer pieno - messaggio perso 
 			log.Printf("Buffer pieno, messaggio perso: %s", msg.Topic())
 		}
 	}

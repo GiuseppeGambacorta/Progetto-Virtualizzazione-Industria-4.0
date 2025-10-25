@@ -153,7 +153,11 @@ func main() {
 	var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 		payload := string(msg.Payload())
 
-		fmt.Printf("[%s] %s = %s\n", time.Now().Format("15:04:05"), msg.Topic(), payload)
+		retained := "no"
+		if msg.Retained() {
+			retained = "yes"
+		}
+		fmt.Printf("[%s] %s = %s (QoS: %d, Retained: %s)\n", time.Now().Format("15:04:05"), msg.Topic(), payload, msg.Qos(), retained)
 
 		// Invia al channel (non bloccante se c'è spazio nel buffer)
 		select {
@@ -185,6 +189,7 @@ func main() {
 		log.Fatalf("Errore sottoscrizione topic: %v", token.Error())
 	}
 
+	log.Printf("Sottoscritto a: %s con QoS 1", wildcardTopic)
 	fmt.Printf("Auto-discovery attivo su: %s\n", wildcardTopic)
 	fmt.Println("In attesa di messaggi... (Ctrl+C per uscire)")
 

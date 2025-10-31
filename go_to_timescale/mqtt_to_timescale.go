@@ -142,7 +142,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	// Avvia 5 worker goroutine per il database
-	numWorkers := 5
+	numWorkers := 1
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go dbWorker(db, msgChan, &wg)

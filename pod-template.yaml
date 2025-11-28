@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   # 'name' è l'identificatore tecnico e univoco del pod all'interno del cluster/container engine.
   # Deve essere unico per ogni pod e viene usato dai comandi di gestione (es: podman, kubectl).
-  name: digitaltwin-${POD_NAME}
+  name: dt-${POD_NAME}
 
   labels:
     # 'app' è una label generica che permette di raggruppare tutte le risorse che fanno parte della stessa applicazione.
@@ -44,7 +44,8 @@ spec:
             export POSTGRES_USER=mqtt_user
             export POSTGRES_PASSWORD=mqtt_password
             export POSTGRES_INITDB_ARGS="--auth-host=trust --auth-local=trust"
-            
+            export TZ=Europe/Rome
+            export PGTZ=Europe/Rome
             if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
               echo "Database non esistente, inizializzazione automatica..."
             else
@@ -60,6 +61,7 @@ spec:
         - name: timescale-init
           mountPath: /docker-entrypoint-initdb.d
           readOnly: true
+
 
   #  - name: go-publisher
   #    image: docker.io/alpine:latest
@@ -92,37 +94,39 @@ spec:
           value: "mqtt_user"
         - name: DB_PASSWORD
           value: "mqtt_password"
+        - name: TZ 
+          value: "Europe/Rome"
       volumeMounts:
         - name: go-client-binary
           mountPath: /app/mqtt_to_timescale    # punto di montaggio all'interno del container
           subPath: mqtt_to_timescale           # dalla cartella del client monta solo il file
           readOnly: true
 
-    - name: grafana
-      image: docker.io/grafana/grafana:latest
-      ports:
-        - containerPort: 3000
-          hostPort: ${GRAFANA_PORT} 
-          protocol: TCP
-      environment:
-        - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin"  
-        - name: GF_USERS_ALLOW_SIGN_UP
-          value: "false"
-        - name: GF_INSTALL_PLUGINS
-          value: "grafana-clock-panel,grafana-simple-json-datasource"
-        - name: POD_NAME
-          value: "${POD_NAME}" 
-      volumeMounts:
-        - name: grafana-data
-          mountPath: /var/lib/grafana
-        - name: grafana-config
-          mountPath: /etc/grafana/provisioning
-          readOnly: true
-        - name: grafana-ini
-          mountPath: /etc/grafana/grafana.ini   # punto di montaggio all'interno del container
-          subPath: grafana.ini                  # da grafana-ini monta solo il file grafana.ini
-          readOnly: true
+  #  - name: grafana
+  #  image: docker.io/grafana/grafana:latest
+  #    ports:
+  #      - containerPort: 3000
+  #      hostPort: ${GRAFANA_PORT} 
+  #      protocol: TCP
+  #  environment:
+  #    - name: GF_SECURITY_ADMIN_PASSWORD
+  #      value: "admin"  
+  #    - name: GF_USERS_ALLOW_SIGN_UP
+  #      value: "false"
+  #    - name: GF_INSTALL_PLUGINS
+  #      value: "grafana-clock-panel,grafana-simple-json-datasource"
+  #    - name: POD_NAME
+  #      value: "${POD_NAME}" 
+  #  volumeMounts:
+  #    - name: grafana-data
+  #      mountPath: /var/lib/grafana
+  #    - name: grafana-config
+  #      mountPath: /etc/grafana/provisioning
+  #      readOnly: true
+  #    - name: grafana-ini
+  #      mountPath: /etc/grafana/grafana.ini   # punto di montaggio all'interno del container
+  #      subPath: grafana.ini                  # da grafana-ini monta solo il file grafana.ini
+  #      readOnly: true
 
   volumes:                   # I volumi vengono dichiarati separatamente, da notare che non viene dichiarata nessuna rete
     # Configurazione Mosquitto

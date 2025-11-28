@@ -111,18 +111,18 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    time,\n    (value->>'Position')::numeric as Position\nFROM mqtt_data \nWHERE topic = 'PickAndPlace/ProductInfeedConveyors/Objects/FirstConveyor' \n  AND time >= $__timeFrom() \n  AND time <= $__timeTo()\nORDER BY time ASC;",
+          "rawSql": "SELECT \n    time,\n    (value->>'Position')::numeric as Position\nFROM mqtt_data \nWHERE topic = 'home/ProductInfeedConveyors/Objects/FirstConveyor' \n  AND time >= $__timeFrom() \n  AND time <= $__timeTo()\nORDER BY time ASC;",
           "refId": "A"
         }
       ],
-      "title": "PickAndPlace - FirstConveyor Position",
+      "title": "home - FirstConveyor Position",
       "type": "timeseries"
     }
   ],
   "preload": false,
   "refresh": "auto",
   "schemaVersion": 41,
-  "tags": ["PickAndPlace", "conveyor"],
+  "tags": ["home", "conveyor"],
   "templating": {
     "list": []
   },
@@ -132,7 +132,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "PickAndPlace Motor Dashboard",
-  "uid": "PickAndPlace-motor-dashboard",
+  "title": "home Motor Dashboard",
+  "uid": "home-motor-dashboard",
   "version": 1
 }

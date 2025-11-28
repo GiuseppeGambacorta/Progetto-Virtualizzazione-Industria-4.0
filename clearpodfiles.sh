@@ -15,14 +15,14 @@ fi
 echo "🧹 Pulizia dati per pod: ${POD_NAME}"
 
 # Controlla se il pod è in esecuzione
-if podman pod exists digitaltwin-${POD_NAME} 2>/dev/null; then
-    echo "  Il pod digitaltwin-${POD_NAME} è ancora in esecuzione!"
+if podman pod exists dt-${POD_NAME} 2>/dev/null; then
+    echo "  Il pod dt-${POD_NAME} è ancora in esecuzione!"
     read -p "Vuoi fermarlo e rimuoverlo? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo " Fermando e rimuovendo pod..."
-        podman pod stop digitaltwin-${POD_NAME}
-        podman pod rm -f digitaltwin-${POD_NAME}
+        podman pod stop dt-${POD_NAME}
+        podman pod rm -f dt-${POD_NAME}
     else
         echo " Operazione annullata. Ferma il pod manualmente prima di pulire i dati."
         exit 1

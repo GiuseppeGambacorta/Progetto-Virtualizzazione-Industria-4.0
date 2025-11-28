@@ -5,7 +5,7 @@ HOST_PORT=${2:-"1883"}
 GRAFANA_PORT=${3:-"5000"}
 
 echo "Compilando Go binary MQTT->TimescaleDB per Linux..."
-cd go_to_timescale && GOOS=linux go build -o mqtt_to_timescale mqtt_to_timescale.go 
+cd go_to_timescale && CGO_ENABLED=0 GOOS=linux go build -a -o mqtt_to_timescale mqtt_to_timescale.go 
 cd ..
 
 

@@ -11,14 +11,14 @@ Compila i due eseguibili necessari (simulatore e client):
 
 **Su macOS/Linux/WSL:**
 ```bash
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o go_simulation/go_simulation go_simulation/mqtt_simulation.go
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o go_to_timescale/mqtt_to_timescale go_to_timescale/mqtt_to_timescale.go
+GOOS=linux  go build -o go_simulation/go_simulation go_simulation/mqtt_simulation.go
+GOOS=linux  go build -o go_to_timescale/mqtt_to_timescale go_to_timescale/mqtt_to_timescale.go
 ```
 
 **Su Windows (PowerShell):**
 ```powershell
-$env:GOOS="linux"; $env:GOARCH="arm64"; $env:CGO_ENABLED="0"; go build -o go_simulation/go_simulation go_simulation/mqtt_simulation.go
-$env:GOOS="linux"; $env:GOARCH="arm64"; $env:CGO_ENABLED="0"; go build -o go_to_timescale/mqtt_to_timescale go_to_timescale/mqtt_to_timescale.go
+$env:GOOS="linux";  go build -o go_simulation/go_simulation go_simulation/mqtt_simulation.go
+$env:GOOS="linux";  go build -o go_to_timescale/mqtt_to_timescale go_to_timescale/mqtt_to_timescale.go
 ```
 
 ## 2. Installazione e Avvio della VM Podman

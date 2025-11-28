@@ -4,14 +4,14 @@ POD_NAME=${1:-"default"}
 HOST_PORT=${2:-"1883"}
 GRAFANA_PORT=${3:-"5000"}
 
-#echo "Compilando Go binary MQTT->TimescaleDB per Linux..."
-#cd go_to_timescale && GOOS=linux GOARCH=arm64 go build -o mqtt_to_timescale mqtt_to_timescale.go
-#cd ..
+echo "Compilando Go binary MQTT->TimescaleDB per Linux..."
+cd go_to_timescale && GOOS=linux go build -o mqtt_to_timescale mqtt_to_timescale.go
+cd ..
 
 
-#echo "Compilando Go binary Simulazione per Linux..."
-#cd go_simulation && GOOS=linux GOARCH=arm64 go build -o go_simulation go_simulation.go
-#cd ..
+echo "Compilando Go binary Simulazione per Linux..."
+cd go_simulation && GOOS=linux go build -o go_simulation go_simulation.go
+cd ..
 
 
 echo " Generando dashboard per: ${POD_NAME}"

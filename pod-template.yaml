@@ -14,7 +14,7 @@ metadata:
     # A differenza di 'name', può essere duplicata su più pod se necessario.
     instance: ${POD_NAME}
 spec:
-  restartPolicy: Always
+  restartPolicy: Never #no always, gestisce systemd
 
   containers:
     
@@ -62,29 +62,29 @@ spec:
           mountPath: /docker-entrypoint-initdb.d
           readOnly: true
 
-    - name: metabase
-      image: docker.io/metabase/metabase:latest
-      ports:
-      - containerPort: 3000
-        hostPort: ${METABASE_PORT} # Porta per l'interfaccia web di Metabase
-        protocol: TCP
-      environment:
-        # Connessione al database TimescaleDB per l'analisi dei dati
-        - name: MB_DB_TYPE
-          value: "postgres"
-        - name: MB_DB_DBNAME
-          value: "mqtt_data"
-        - name: MB_DB_PORT
-          value: "5432"
-        - name: MB_DB_USER
-          value: "mqtt_user"
-        - name: MB_DB_PASS
-          value: "mqtt_password"
-        - name: MB_DB_HOST
-          value: "localhost" # I container nello stesso pod condividono la rete
-      volumeMounts:
-        - name: metabase-data
-          mountPath: /metabase.db # Persistenza del database interno di Metabase
+  #  - name: metabase
+  #    image: docker.io/metabase/metabase:latest
+  #    ports:
+  #    - containerPort: 3000
+  #      hostPort: ${METABASE_PORT} # Porta per l'interfaccia web di Metabase
+  #      protocol: TCP
+  #   environment:
+  #     # Connessione al database TimescaleDB per l'analisi dei dati
+  #     - name: MB_DB_TYPE
+  #       value: "postgres"
+  #     - name: MB_DB_DBNAME
+  #       value: "mqtt_data"
+  #     - name: MB_DB_PORT
+  #       value: "5432"
+  #     - name: MB_DB_USER
+  #       value: "mqtt_user"
+  #     - name: MB_DB_PASS
+  #       value: "mqtt_password"
+  #     - name: MB_DB_HOST
+  #       value: "localhost" # I container nello stesso pod condividono la rete
+  #   volumeMounts:
+  #     - name: metabase-data
+  #       mountPath: /metabase.db # Persistenza del database interno di Metabase
 
     - name: go-client
       image: docker.io/alpine:latest
@@ -138,7 +138,7 @@ spec:
         type: Directory
 
     # Dati persistenti Metabase
-    - name: metabase-data
-      hostPath:
-        path: ${PWD}/metabase/data/${POD_NAME}
-        type: DirectoryOrCreate
+    #- name: metabase-data
+    #  hostPath:
+    #    path: ${PWD}/metabase/data/${POD_NAME}
+    #   type: DirectoryOrCreate

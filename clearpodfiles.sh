@@ -8,7 +8,7 @@ if [ "$POD_NAME" = "default" ] && [ $# -eq 0 ]; then
     echo "Esempio: $0 palletizer"
     echo ""
     echo "Pod con dati esistenti:"
-    (ls -d timescale/data/*/ 2>/dev/null; ls -d metabase/data/*/ 2>/dev/null) | sed 's|.*/\(.*\)/|\1|' | sort -u
+    (ls -d timescale/data/*/ 2>/dev/null; ) | sed 's|.*/\(.*\)/|\1|' | sort -u
     exit 1
 fi
 
@@ -31,7 +31,7 @@ fi
 
 # Percorsi da pulire
 TIMESCALE_PATH="timescale/data/${POD_NAME}"
-METABASE_PATH="metabase/data/${POD_NAME}"
+
 
 
 echo " Directory da rimuovere:"
@@ -39,7 +39,7 @@ echo "    ${TIMESCALE_PATH}"
 echo "    ${METABASE_PATH}"
 
 # Verifica che le directory esistano
-if [ ! -d "$TIMESCALE_PATH" ] && [ ! -d "$METABASE_PATH" ]; then
+if [ ! -d "$TIMESCALE_PATH" ]; then
     echo "ℹ  Nessuna directory di dati trovata per il pod ${POD_NAME}"
     exit 0
 fi
@@ -59,11 +59,6 @@ if [ -d "$TIMESCALE_PATH" ]; then
     echo " Rimosso: $TIMESCALE_PATH"
 fi
 
-if [ -d "$METABASE_PATH" ]; then
-    echo "  Rimuovendo dati Metabase..."
-    rm -rf "$METABASE_PATH"
-    echo " Rimosso: $METABASE_PATH"
-fi
 
 
 

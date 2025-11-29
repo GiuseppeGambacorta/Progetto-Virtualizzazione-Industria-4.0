@@ -21,7 +21,7 @@ shift $((OPTIND-1)) # Rimuove le opzioni analizzate, lasciando gli argomenti pos
 # Assegna gli argomenti posizionali (POD_NAME, etc.)
 POD_NAME=${1:-"default"}
 HOST_PORT=${2:-"1883"}
-METABASE_PORT=${3:-"3000"}
+
 
 # Esegue la compilazione solo se il flag -c è stato fornito
 if [ "$COMPILE_GOLANG" = true ] ; then
@@ -39,17 +39,16 @@ else
 fi
 
 
-echo "Lanciando pod: digitaltwin-${POD_NAME} su porta MQTT:${HOST_PORT}, MetaBase:${METABASE_PORT}"
+echo "Lanciando pod: digitaltwin-${POD_NAME} su porta MQTT:${HOST_PORT}"
 
 
 # Sostituisci variabili e lancia
 sed -e "s/\${POD_NAME}/${POD_NAME}/g" \
     -e "s/\${HOST_PORT}/${HOST_PORT}/g" \
-    -e "s/\${METABASE_PORT}/${METABASE_PORT}/g" \
     -e "s|\${PWD}|$(pwd)|g" \
     pod-template.yaml | podman play kube -
 
 echo " Pod digitaltwin-${POD_NAME} avviato:"
 echo "    MQTT Broker: 127.0.0.1:${HOST_PORT}"
-echo "    MetaBase: http://127.0.0.1:${METABASE_PORT} (admin/admin)"
+
 echo "    Database: timescale/data/${POD_NAME}/"

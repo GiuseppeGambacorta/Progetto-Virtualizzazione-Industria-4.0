@@ -32,7 +32,7 @@ spec:
       image: docker.io/timescale/timescaledb:latest-pg15
       ports:
         - hostPort: 5432
-        - protocol: TCP
+          protocol: TCP
       command:                     # Imposto qui le variabili di ambiente per via di un problema noto con le immagini postgres (sul quale timescaleDB è basato)
           - /bin/bash
           - -c
@@ -62,19 +62,29 @@ spec:
           mountPath: /docker-entrypoint-initdb.d
           readOnly: true
 
-
-  #  - name: go-publisher
-  #    image: docker.io/alpine:latest
-  #   workingDir: /app
-  #    command: ["./mqtt_simulation"]
-  #    args: ["${POD_NAME}", "1883"]  # Argomenti Multipli
-  #    environment:
-  #    volumeMounts:
-  #      - name: go-publisher-binary
-  #        mountPath: /app/mqtt_simulation   # punto di montaggio all'interno del container
-  #        subPath: mqtt_simulation          # dalla cartella del publisher monta solo il file
-  #        readOnly: true
-      
+    - name: metabase
+      image: docker.io/metabase/metabase:latest
+      ports:
+      - containerPort: 3000
+        hostPort: ${METABASE_PORT} # Porta per l'interfaccia web di Metabase
+        protocol: TCP
+      environment:
+        # Connessione al database TimescaleDB per l'analisi dei dati
+        - name: MB_DB_TYPE
+          value: "postgres"
+        - name: MB_DB_DBNAME
+          value: "mqtt_data"
+        - name: MB_DB_PORT
+          value: "5432"
+        - name: MB_DB_USER
+          value: "mqtt_user"
+        - name: MB_DB_PASS
+          value: "mqtt_password"
+        - name: MB_DB_HOST
+          value: "localhost" # I container nello stesso pod condividono la rete
+      volumeMounts:
+        - name: metabase-data
+          mountPath: /metabase.db # Persistenza del database interno di Metabase
 
     - name: go-client
       image: docker.io/alpine:latest
@@ -102,43 +112,11 @@ spec:
           subPath: mqtt_to_timescale           # dalla cartella del client monta solo il file
           readOnly: true
 
-  #  - name: grafana
-  #  image: docker.io/grafana/grafana:latest
-  #    ports:
-  #      - containerPort: 3000
-  #      hostPort: ${GRAFANA_PORT} 
-  #      protocol: TCP
-  #  environment:
-  #    - name: GF_SECURITY_ADMIN_PASSWORD
-  #      value: "admin"  
-  #    - name: GF_USERS_ALLOW_SIGN_UP
-  #      value: "false"
-  #    - name: GF_INSTALL_PLUGINS
-  #      value: "grafana-clock-panel,grafana-simple-json-datasource"
-  #    - name: POD_NAME
-  #      value: "${POD_NAME}" 
-  #  volumeMounts:
-  #    - name: grafana-data
-  #      mountPath: /var/lib/grafana
-  #    - name: grafana-config
-  #      mountPath: /etc/grafana/provisioning
-  #      readOnly: true
-  #    - name: grafana-ini
-  #      mountPath: /etc/grafana/grafana.ini   # punto di montaggio all'interno del container
-  #      subPath: grafana.ini                  # da grafana-ini monta solo il file grafana.ini
-  #      readOnly: true
-
   volumes:                   # I volumi vengono dichiarati separatamente, da notare che non viene dichiarata nessuna rete
     # Configurazione Mosquitto
     - name: mosquitto-conf
       hostPath:
         path: ${PWD}/mosquitto
-        type: Directory
-
-    # Binario simulatore MQTT
-    - name: go-publisher-binary
-      hostPath:
-        path: ${PWD}/go_simulation
         type: Directory
 
     # Binario client Go
@@ -159,20 +137,8 @@ spec:
         path: ${PWD}/timescale/init
         type: Directory
 
-    # Dati persistenti Grafana    
-    - name: grafana-data
+    # Dati persistenti Metabase
+    - name: metabase-data
       hostPath:
-        path: ${PWD}/grafana/data/${POD_NAME}
-        type: DirectoryOrCreate  # Crea automaticamente la cartella se non esiste
-
-    # Provisioning dashboard/datasource Grafana
-    - name: grafana-config
-      hostPath:
-        path: ${PWD}/grafana/provisioning
-        type: Directory
-
-    # Configurazione principale Grafana, al container passo solo grafana.ini
-    - name: grafana-ini
-      hostPath:
-        path: ${PWD}/grafana
-        type: Directory
+        path: ${PWD}/metabase/data/${POD_NAME}
+        type: DirectoryOrCreate

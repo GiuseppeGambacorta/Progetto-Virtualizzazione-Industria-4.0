@@ -7,8 +7,8 @@ if [ "$POD_NAME" = "default" ] && [ $# -eq 0 ]; then
     echo "Utilizzo: $0 <POD_NAME>"
     echo "Esempio: $0 palletizer"
     echo ""
-    echo "Pod esistenti:"
-    ls -la timescale/data/ 2>/dev/null | grep "^d" | awk '{print $NF}' | grep -v "^\.$\|^\.\.$"
+    echo "Pod con dati esistenti:"
+    (ls -d timescale/data/*/ 2>/dev/null; ls -d metabase/data/*/ 2>/dev/null) | sed 's|.*/\(.*\)/|\1|' | sort -u
     exit 1
 fi
 
@@ -31,20 +31,21 @@ fi
 
 # Percorsi da pulire
 TIMESCALE_PATH="timescale/data/${POD_NAME}"
-GRAFANA_PATH="grafana/data/${POD_NAME}"
+METABASE_PATH="metabase/data/${POD_NAME}"
+
 
 echo " Directory da rimuovere:"
 echo "    ${TIMESCALE_PATH}"
-echo "    ${GRAFANA_PATH}"
+echo "    ${METABASE_PATH}"
 
 # Verifica che le directory esistano
-if [ ! -d "$TIMESCALE_PATH" ] && [ ! -d "$GRAFANA_PATH" ]; then
-    echo "ℹ  Nessuna directory trovata per il pod ${POD_NAME}"
+if [ ! -d "$TIMESCALE_PATH" ] && [ ! -d "$METABASE_PATH" ]; then
+    echo "ℹ  Nessuna directory di dati trovata per il pod ${POD_NAME}"
     exit 0
 fi
 
 # Conferma prima di eliminare
-read -p "  Sei sicuro di voler eliminare TUTTI i dati? (y/N): " -n 1 -r
+read -p "  Sei sicuro di voler eliminare TUTTI i dati per questo pod? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo " Operazione annullata."
@@ -58,11 +59,13 @@ if [ -d "$TIMESCALE_PATH" ]; then
     echo " Rimosso: $TIMESCALE_PATH"
 fi
 
-if [ -d "$GRAFANA_PATH" ]; then
-    echo "  Rimuovendo dati Grafana..."
-    rm -rf "$GRAFANA_PATH"
-    echo " Rimosso: $GRAFANA_PATH"
+if [ -d "$METABASE_PATH" ]; then
+    echo "  Rimuovendo dati Metabase..."
+    rm -rf "$METABASE_PATH"
+    echo " Rimosso: $METABASE_PATH"
 fi
+
+
 
 echo ""
 echo " Pulizia completata per pod: ${POD_NAME}"

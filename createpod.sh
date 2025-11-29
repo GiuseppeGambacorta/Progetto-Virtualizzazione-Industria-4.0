@@ -21,7 +21,7 @@ shift $((OPTIND-1)) # Rimuove le opzioni analizzate, lasciando gli argomenti pos
 # Assegna gli argomenti posizionali (POD_NAME, etc.)
 POD_NAME=${1:-"default"}
 HOST_PORT=${2:-"1883"}
-GRAFANA_PORT=${3:-"5000"}
+METABASE_PORT=${3:-"3000"}
 
 # Esegue la compilazione solo se il flag -c è stato fornito
 if [ "$COMPILE_GOLANG" = true ] ; then
@@ -38,29 +38,18 @@ else
     echo "--- Compilazione saltata (usa il flag -c per forzarla) ---"
 fi
 
-#echo "Compilando Go binary Simulazione per Linux..."
-#cd go_simulation && GOOS=linux go build -o go_simulation go_simulation.go
-#cd ..
 
-echo " Generando dashboard per: ${POD_NAME}"
-
-sed "s/\${POD_NAME}/${POD_NAME}/g" \
-    grafana/provisioning/dashboards/mqtt-dashboard-template.json > \
-    grafana/provisioning/dashboards/mqtt-dashboard.json
-
-
-echo "Lanciando pod: digitaltwin-${POD_NAME} su porta MQTT:${HOST_PORT}, Grafana:${GRAFANA_PORT}"
+echo "Lanciando pod: digitaltwin-${POD_NAME} su porta MQTT:${HOST_PORT}, MetaBase:${METABASE_PORT}"
 
 
 # Sostituisci variabili e lancia
 sed -e "s/\${POD_NAME}/${POD_NAME}/g" \
     -e "s/\${HOST_PORT}/${HOST_PORT}/g" \
-    -e "s/\${GRAFANA_PORT}/${GRAFANA_PORT}/g" \
+    -e "s/\${METABASE_PORT}/${METABASE_PORT}/g" \
     -e "s|\${PWD}|$(pwd)|g" \
     pod-template.yaml | podman play kube -
 
 echo " Pod digitaltwin-${POD_NAME} avviato:"
 echo "    MQTT Broker: 127.0.0.1:${HOST_PORT}"
-#echo "    Grafana: http://127.0.0.1:${GRAFANA_PORT} (admin/admin)"
+echo "    MetaBase: http://127.0.0.1:${METABASE_PORT} (admin/admin)"
 echo "    Database: timescale/data/${POD_NAME}/"
-#echo "    Grafana data: grafana/data/${POD_NAME}/"
